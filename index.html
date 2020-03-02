@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Axios-demo</title>
+</head>
+
+<body>
+    <div class="app">
+        <div>
+            <p>玩家：__name__</p>
+            <p>水晶：<span class="number">__number__</span></p>
+        </div>
+        <div>
+            <button class="add100">加100</button>
+            <button class="minus100">减100</button>
+            <button class="restTo0">归零</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script>
+        /***** axios拦截响应 *****/
+        let crystals = {
+            name: '甲板清洁工',
+            number: 200,
+        }
+        axios.interceptors.response.use(function (response) {
+            // 把请求里的url\method\data拿出来
+            let {
+                config: {
+                    url,
+                    method,
+                    data
+                }
+            } = response
+            if (url === '/crystals/readCrystals' && method === 'get') {
+                response.data = crystals
+            } else if (url === '/crystals/changeNumber' && method === 'put') {
+                var data1 = JSON.parse(data)
+                // 把请求的data弄到crystals数据库上，并赋值给响应。
+                Object.assign(crystals, data1)
+                console.log(crystals)
+                response.data = crystals
+            }
+            return response;
+        })
+
+        /***** axios发请求 *****/
+        // axios发起请求，拿到响应的data，把data替换html的内容。
+        axios.get('/crystals/readCrystals').then(({
+            data
+        }) => {
+            let originalHtml = $('.app').html()
+            let newHtml = originalHtml.replace('__name__', data.name).replace('__number__', data.number)
+            $('.app').html(newHtml)
+        })
+
+        // 按钮操作发PUT请求
+        $('.app').on('click', '.add100', function () {
+            var oldNumber = $('.number').text()
+            var newNumber = oldNumber - 0 + 100
+            axios.put('/crystals/changeNumber', {
+                'number': newNumber
+            }).then(() => {
+                $('.number').text(newNumber)
+            })
+        })
+        $('.app').on('click', '.minus100', function () {
+            var oldNumber = $('.number').text()
+            var newNumber = oldNumber - 0 - 100
+            axios.put('/crystals/changeNumber', {
+                'number': newNumber
+            }).then(() => {
+                $('.number').text(newNumber)
+            })
+        })
+        $('.app').on('click', '.restTo0', function () {
+            axios.put('/crystals/changeNumber', {
+                'number': 0
+            }).then(() => {
+                $('.number').text(0)
+            })
+        })
+    </script>
+</body>
+
+</html>
